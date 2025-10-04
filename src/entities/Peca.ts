@@ -1,11 +1,11 @@
-import { TipoPeca } from "../enums/TipoPeca";
+import { TipoPeca } from "../enums/TiposPeca";
 import { StatusPeca } from "../enums/StatusPeca";
 
 export class Peca {
     constructor(
+        public id: string,
         public nome: string,
         public tipo: TipoPeca,
-        public fornecedor: string,
         public status: StatusPeca = StatusPeca.EM_PRODUCAO
     ) {}
 
@@ -13,12 +13,21 @@ export class Peca {
         this.status = novoStatus;
     }
 
-    salvarDados(): string {
-        return `${this.nome},${this.tipo},${this.fornecedor},${this.status}`;
+    toJSON() {
+        return {
+            id: this.id,
+            nome: this.nome,
+            tipo: this.tipo,
+            status: this.status
+        };
     }
 
-    static carregarDados(dados: string): Peca {
-        const [nome, tipo, fornecedor, status] = dados.split(',');
-        return new Peca(nome, tipo as TipoPeca, fornecedor, status as StatusPeca);
+    static fromJSON(json: any): Peca {
+        return new Peca(
+            json.id,
+            json.nome,
+            json.tipo,
+            json.status
+        );
     }
 }
