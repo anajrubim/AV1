@@ -1,18 +1,26 @@
-import { TipoTeste } from "../enums/TipoTeste";
-import { ResultadoTeste } from "../enums/ResultadoTeste";
+import { TipoTeste } from "../enums/TiposTeste";
+import { ResultadoTeste } from "../enums/ResultadosTeste";
 
 export class Teste {
     constructor(
+        public id: string,
         public tipo: TipoTeste,
         public resultado: ResultadoTeste
     ) {}
 
-    salvarDados(): string {
-        return `${this.tipo},${this.resultado}`;
+    toJSON() {
+        return {
+            id: this.id,
+            tipo: this.tipo,
+            resultado: this.resultado
+        };
     }
 
-    static carregarDados(dados: string): Teste {
-        const [tipo, resultado] = dados.split(',');
-        return new Teste(tipo as TipoTeste, resultado as ResultadoTeste);
+    static fromJSON(json: any): Teste {
+        return new Teste(
+            json.id,
+            json.tipo,
+            json.resultado
+        );
     }
 }
