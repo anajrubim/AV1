@@ -1,14 +1,10 @@
 import { StatusEtapa } from "../enums/StatusEtapa";
-import { Funcionario } from "./Funcionario";
 
 export class Etapa {
-    public funcionarios: Funcionario[] = [];
+    public funcionarios: string[] = [];
     public status: StatusEtapa = StatusEtapa.PENDENTE;
-
-    constructor(
-        public nome: string,
-        public prazo: Date
-    ) {}
+    
+    constructor(public id: string, public nome: string) {}
 
     iniciarEtapa(): void {
         this.status = StatusEtapa.ANDAMENTO;
@@ -18,18 +14,25 @@ export class Etapa {
         this.status = StatusEtapa.CONCLUIDA;
     }
 
-    associarFuncionario(funcionario: Funcionario): void {
-        if (!this.funcionarios.find(f => f.id === funcionario.id)) {
-            this.funcionarios.push(funcionario);
+    associarFuncionario(funcionarioId: string): void {
+        if (!this.funcionarios.includes(funcionarioId)) {
+            this.funcionarios.push(funcionarioId);
         }
     }
 
-    listarFuncionarios(): Funcionario[] {
-        return this.funcionarios;
+    toJSON() {
+        return {
+            id: this.id,
+            nome: this.nome,
+            status: this.status,
+            funcionarios: this.funcionarios
+        };
     }
 
-    salvarDados(): string {
-        const funcionariosIds = this.funcionarios.map(f => f.id).join(';');
-        return `${this.nome},${this.prazo.toISOString()},${this.status},${funcionariosIds}`;
+    static fromJSON(json: any): Etapa {
+        const etapa = new Etapa(json.id, json.nome);
+        etapa.status = json.status;
+        etapa.funcionarios = json.funcionarios || [];
+        return etapa;
     }
 }
