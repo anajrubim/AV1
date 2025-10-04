@@ -4,7 +4,7 @@
   "main": "src/app.ts",
   "scripts": {
     "start": "ts-node src/app.ts",
-    "dev": "ts-node src/app.ts"
+    "dev": "tsc && node out/app.js"
   },
   "dependencies": {
     "readline-sync": "^1.4.10",
