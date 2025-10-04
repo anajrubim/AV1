@@ -213,15 +213,22 @@ class Aeronave {
         this.testes.push(teste);
     }
 
-    exibirDetalhes(pecasList: Peca[], etapasList: Etapa[]): string {
+    exibirDetalhes(pecasList: Peca[], etapasList: Etapa[], funcionariosList: Funcionario[]): string {
         const pecasDetalhes = this.pecas.map(pecaId => {
             const peca = pecasList.find(p => p.id === pecaId);
-            return peca ? `- ${peca.nome} - ${peca.status}` : `- Peça ${pecaId} (não encontrada)`;
+            return peca ? `- ${peca.nome} (${peca.tipo}) - ${peca.status}` : `- Peça ${pecaId} (não encontrada)`;
         }).join('\n');
 
         const etapasDetalhes = this.etapas.map(etapaId => {
             const etapa = etapasList.find(e => e.id === etapaId);
-            return etapa ? `- ${etapa.nome} - ${etapa.status}` : `- Etapa ${etapaId} (não encontrada)`;
+            if (!etapa) return `- Etapa ${etapaId} (não encontrada)`;
+            
+            const funcionariosEtapa = etapa.funcionarios.map(funcId => {
+                const func = funcionariosList.find(f => f.id === funcId);
+                return func ? func.nome : `Funcionário ${funcId}`;
+            }).join(', ');
+            
+            return `- ${etapa.nome} - ${etapa.status} [${funcionariosEtapa || 'Nenhum funcionário'}]`;
         }).join('\n');
 
         const testesDetalhes = this.testes.map(teste => 
@@ -235,14 +242,14 @@ Tipo: ${this.tipo}
 Capacidade: ${this.capacidade}
 Alcance: ${this.alcance} km
 
-PECAS:
-${pecasDetalhes}
+PECAS (${this.pecas.length}):
+${pecasDetalhes || 'Nenhuma peça associada'}
 
-ETAPAS:
-${etapasDetalhes}
+ETAPAS (${this.etapas.length}):
+${etapasDetalhes || 'Nenhuma etapa associada'}
 
-TESTES:
-${testesDetalhes}`;
+TESTES (${this.testes.length}):
+${testesDetalhes || 'Nenhum teste registrado'}`;
     }
 
     toJSON() {
@@ -455,6 +462,16 @@ class AerocodeApp {
                 opcaoNumero++;
             }
 
+            if (this.verificarPermissao('cadastrar_peca')) {
+                opcoes[opcaoNumero] = { texto: "Associar Peca", acao: () => this.associarPecaAeronave() };
+                opcaoNumero++;
+            }
+
+            if (this.verificarPermissao('cadastrar_etapa')) {
+                opcoes[opcaoNumero] = { texto: "Associar Etapa", acao: () => this.associarEtapaAeronave() };
+                opcaoNumero++;
+            }
+
             opcoes[opcaoNumero] = { texto: "Voltar", acao: () => {} };
 
             Object.keys(opcoes).forEach(num => {
@@ -477,6 +494,12 @@ class AerocodeApp {
         console.log("\nCADASTRAR AERONAVE");
         const id = GeradorID.gerar("aeronave");
         const codigo = readlineSync.question("Codigo: ");
+        
+        if (this.aeronaves.find(a => a.codigo === codigo)) {
+            console.log("Erro: Codigo ja existe! Use outro codigo.");
+            return;
+        }
+        
         const modelo = readlineSync.question("Modelo: ");
         
         console.log("1. Comercial");
@@ -499,7 +522,7 @@ class AerocodeApp {
             return;
         }
         this.aeronaves.forEach(a => {
-            console.log(`- ${a.codigo}: ${a.modelo} (${a.tipo})`);
+            console.log(`- ${a.codigo}: ${a.modelo} (${a.tipo}) - ${a.pecas.length} pecas, ${a.etapas.length} etapas`);
         });
     }
 
@@ -508,9 +531,81 @@ class AerocodeApp {
         const aeronave = this.aeronaves.find(a => a.codigo === codigo);
         
         if (aeronave) {
-            console.log(aeronave.exibirDetalhes(this.pecas, this.etapas));
+            console.log(aeronave.exibirDetalhes(this.pecas, this.etapas, this.funcionarios));
         } else {
             console.log("Aeronave nao encontrada!");
+        }
+    }
+
+    private associarPecaAeronave(): void {
+        if (this.aeronaves.length === 0 || this.pecas.length === 0) {
+            console.log("Cadastre aeronaves e pecas primeiro!");
+            return;
+        }
+
+        console.log("\nASSOCIAR PECA A AERONAVE");
+        console.log("Aeronaves:");
+        this.listarAeronaves();
+        const aeroIndex = parseInt(readlineSync.question("Numero da aeronave: ")) - 1;
+
+        console.log("Pecas disponiveis:");
+        this.pecas.forEach((p, i) => {
+            console.log(`${i+1}. ${p.nome} (${p.tipo}) - ${p.status}`);
+        });
+        const pecIndex = parseInt(readlineSync.question("Numero da peca: ")) - 1;
+
+        if (aeroIndex >= 0 && aeroIndex < this.aeronaves.length && 
+            pecIndex >= 0 && pecIndex < this.pecas.length) {
+            
+            const aeronave = this.aeronaves[aeroIndex];
+            const peca = this.pecas[pecIndex];
+            
+            if (aeronave.pecas.includes(peca.id)) {
+                console.log("Esta peca ja esta associada a esta aeronave!");
+                return;
+            }
+            
+            aeronave.adicionarPeca(peca.id);
+            this.salvarTodosDados();
+            console.log("Peca associada a aeronave!");
+        } else {
+            console.log("Numeros invalidos!");
+        }
+    }
+
+    private associarEtapaAeronave(): void {
+        if (this.aeronaves.length === 0 || this.etapas.length === 0) {
+            console.log("Cadastre aeronaves e etapas primeiro!");
+            return;
+        }
+
+        console.log("\nASSOCIAR ETAPA A AERONAVE");
+        console.log("Aeronaves:");
+        this.listarAeronaves();
+        const aeroIndex = parseInt(readlineSync.question("Numero da aeronave: ")) - 1;
+
+        console.log("Etapas disponiveis:");
+        this.etapas.forEach((e, i) => {
+            console.log(`${i+1}. ${e.nome} - ${e.status}`);
+        });
+        const etaIndex = parseInt(readlineSync.question("Numero da etapa: ")) - 1;
+
+        if (aeroIndex >= 0 && aeroIndex < this.aeronaves.length && 
+            etaIndex >= 0 && etaIndex < this.etapas.length) {
+            
+            const aeronave = this.aeronaves[aeroIndex];
+            const etapa = this.etapas[etaIndex];
+            
+            if (aeronave.etapas.includes(etapa.id)) {
+                console.log("Esta etapa ja esta associada a esta aeronave!");
+                return;
+            }
+            
+            aeronave.adicionarEtapa(etapa.id);
+            this.salvarTodosDados();
+            console.log("Etapa associada a aeronave!");
+        } else {
+            console.log("Numeros invalidos!");
         }
     }
 
@@ -574,7 +669,10 @@ class AerocodeApp {
             return;
         }
         this.pecas.forEach((p, i) => {
-            console.log(`${i+1}. ${p.nome} - ${p.status}`);
+            const aeronavesComPeca = this.aeronaves.filter(a => a.pecas.includes(p.id));
+            const infoAeronaves = aeronavesComPeca.length > 0 ? 
+                ` [Usada em ${aeronavesComPeca.length} aeronave(s)]` : ' [Nao associada]';
+            console.log(`${i+1}. ${p.nome} (${p.tipo}) - ${p.status}${infoAeronaves}`);
         });
     }
 
@@ -654,6 +752,12 @@ class AerocodeApp {
         console.log("\nCRIAR ETAPA");
         const id = GeradorID.gerar("etapa");
         const nome = readlineSync.question("Nome: ");
+        
+        if (this.etapas.find(e => e.nome.toLowerCase() === nome.toLowerCase())) {
+            console.log("Erro: Nome de etapa ja existe! Use outro nome.");
+            return;
+        }
+        
         this.etapas.push(new Etapa(id, nome));
         this.salvarTodosDados();
         console.log("Etapa criada!");
@@ -666,7 +770,10 @@ class AerocodeApp {
             return;
         }
         this.etapas.forEach((e, i) => {
-            console.log(`${i+1}. ${e.nome} - ${e.status}`);
+            const aeronavesComEtapa = this.aeronaves.filter(a => a.etapas.includes(e.id));
+            const funcionariosEtapa = e.funcionarios.length;
+            const info = ` [${aeronavesComEtapa.length} aeronave(s), ${funcionariosEtapa} funcionario(s)]`;
+            console.log(`${i+1}. ${e.nome} - ${e.status}${info}`);
         });
     }
 
@@ -691,6 +798,13 @@ class AerocodeApp {
     }
 
     private associarFuncionarioEtapa(): void {
+        if (this.etapas.length === 0 || this.funcionarios.length === 0) {
+            console.log("Cadastre etapas e funcionarios primeiro!");
+            return;
+        }
+
+        console.log("\nASSOCIAR FUNCIONARIO A ETAPA");
+        console.log("Etapas:");
         this.listarEtapas();
         const etapaIndex = parseInt(readlineSync.question("Numero da etapa: ")) - 1;
 
@@ -703,9 +817,19 @@ class AerocodeApp {
         if (etapaIndex >= 0 && etapaIndex < this.etapas.length && 
             funcIndex >= 0 && funcIndex < this.funcionarios.length) {
             
-            this.etapas[etapaIndex].associarFuncionario(this.funcionarios[funcIndex].id);
+            const etapa = this.etapas[etapaIndex];
+            const funcionario = this.funcionarios[funcIndex];
+            
+            if (etapa.funcionarios.includes(funcionario.id)) {
+                console.log("Este funcionario ja esta associado a esta etapa!");
+                return;
+            }
+            
+            etapa.associarFuncionario(funcionario.id);
             this.salvarTodosDados();
-            console.log("Funcionario associado!");
+            console.log("Funcionario associado a etapa!");
+        } else {
+            console.log("Numeros invalidos!");
         }
     }
 
@@ -745,6 +869,12 @@ class AerocodeApp {
         const id = GeradorID.gerar("funcionario");
         const nome = readlineSync.question("Nome: ");
         const usuario = readlineSync.question("Usuario: ");
+        
+        if (this.funcionarios.find(f => f.usuario === usuario)) {
+            console.log("Erro: Usuario ja existe! Escolha outro nome de usuario.");
+            return;
+        }
+        
         const senha = readlineSync.question("Senha: ");
         
         console.log("1. Admin");
@@ -768,7 +898,10 @@ class AerocodeApp {
     private listarFuncionarios(): void {
         console.log("\nFUNCIONARIOS:");
         this.funcionarios.forEach(f => {
-            console.log(`- ${f.nome} (${f.usuario}) - ${f.nivelPermissao}`);
+            const etapasComFuncionario = this.etapas.filter(e => e.funcionarios.includes(f.id));
+            const infoEtapas = etapasComFuncionario.length > 0 ? 
+                ` [Atua em ${etapasComFuncionario.length} etapa(s)]` : '';
+            console.log(`- ${f.nome} (${f.usuario}) - ${f.nivelPermissao}${infoEtapas}`);
         });
     }
 
@@ -804,6 +937,12 @@ class AerocodeApp {
     }
 
     private registrarTeste(): void {
+        if (this.aeronaves.length === 0) {
+            console.log("❌ Cadastre aeronaves primeiro!");
+            return;
+        }
+
+        console.log("\nREGISTRAR TESTE");
         this.listarAeronaves();
         const aeroIndex = parseInt(readlineSync.question("Numero da aeronave: ")) - 1;
 
@@ -831,7 +970,7 @@ class AerocodeApp {
             const teste = new Teste(GeradorID.gerar("teste"), tipo, resultado);
             this.aeronaves[aeroIndex].adicionarTeste(teste);
             this.salvarTodosDados();
-            console.log("Teste registrado!");
+            console.log("Teste registrado na aeronave!");
         }
     }
 
@@ -854,7 +993,7 @@ class AerocodeApp {
             console.log("\nRELATORIO FINAL");
             console.log("Cliente: " + cliente);
             console.log("Data entrega: " + dataEntrega);
-            console.log(aeronave.exibirDetalhes(this.pecas, this.etapas));
+            console.log(aeronave.exibirDetalhes(this.pecas, this.etapas, this.funcionarios));
         }
     }
 }
