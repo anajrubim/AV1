@@ -32,19 +32,25 @@ O sistema vem com 3 usuários pré-cadastrados para teste:
 👑 Administrador
 
 Usuário: admin
+
 Senha: admin123
+
 Permissões: Acesso total ao sistema
 
 🔧 Engenheiro
 
 Usuário: eng
+
 Senha: eng123
+
 Permissões: Cadastros, testes, relatórios e produção
 
 👷 Operador
 
 Usuário: op
+
 Senha: op123
+
 Permissões: Apenas operações básicas de produção
 
 
