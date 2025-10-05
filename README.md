@@ -99,6 +99,7 @@ Permissões: Apenas operações básicas de produção
 out/relatorios/[CODIGO_AERONAVE].txt
 
 <br>
+<hr>
 
 Desenvolvido por Ana Júlia Rubim 
 
