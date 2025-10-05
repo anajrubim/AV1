@@ -2,9 +2,13 @@
 
 Sistema completo para gestão da produção de aeronaves, desenvolvido em TypeScript com interface CLI.
 
+
+
 📋 Sobre o Projeto
 
 Sistema especializado no desenvolvimento de software para gestão da produção de aeronaves, desde o cadastro inicial até a entrega final ao cliente.
+
+
 
 🚀 Como Executar
 Pré-requisitos:
@@ -18,7 +22,10 @@ Comandos para execução:
 - npm run dev
 
 
+
+
 🔐 Usuários e Senhas de Acesso
+
 O sistema vem com 3 usuários pré-cadastrados para teste:
 
 👑 Administrador
@@ -38,6 +45,8 @@ Permissões: Cadastros, testes, relatórios e produção
 Usuário: op
 Senha: op123
 Permissões: Apenas operações básicas de produção
+
+
 
 Desenvolvido por Ana Júlia Rubim 
 Github: anajrubim
