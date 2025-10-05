@@ -1,4 +1,4 @@
-import { StatusEtapa } from "../enums/StatusEtapa";
+import { StatusEtapa } from '../enums/StatusEtapa';
 
 export class Etapa {
     public funcionarios: string[] = [];

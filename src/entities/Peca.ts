@@ -1,5 +1,5 @@
-import { TipoPeca } from "../enums/TiposPeca";
-import { StatusPeca } from "../enums/StatusPeca";
+import { TipoPeca } from '../enums/TipoPeca';
+import { StatusPeca } from '../enums/StatusPeca';
 
 export class Peca {
     constructor(

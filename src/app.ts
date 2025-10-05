@@ -2,24 +2,24 @@ import * as readlineSync from 'readline-sync';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { TipoAeronave } from './enums/TipoAeronave';
+import { TipoPeca } from './enums/TipoPeca';
+import { StatusPeca } from './enums/StatusPeca';
+import { StatusEtapa } from './enums/StatusEtapa';
+import { NivelPermissao } from './enums/NivelPermissao';
+import { TipoTeste } from './enums/TipoTeste';
+import { ResultadoTeste } from './enums/ResultadoTeste';
+
 import { Funcionario } from './entities/Funcionario';
 import { Peca } from './entities/Peca';
 import { Etapa } from './entities/Etapa';
 import { Teste } from './entities/Teste';
 import { Aeronave } from './entities/Aeronave';
 
-import { TipoAeronave } from './enums/TiposAeronave';
-import { TipoPeca } from './enums/TiposPeca';
-import { StatusPeca } from './enums/StatusPeca';
-import { StatusEtapa } from './enums/StatusEtapa';
-import { NivelPermissao } from './enums/NiveisPermissao';
-import { TipoTeste } from './enums/TiposTeste';
-import { ResultadoTeste } from './enums/ResultadosTeste';
-
 import { GeradorID } from './services/GeradorID';
 import { Armazenamento } from './services/Armazenamento';
 
-class AerocodeApp {
+export class AerocodeApp {
     private aeronaves: Aeronave[] = [];
     private funcionarios: Funcionario[] = [];
     private pecas: Peca[] = [];
@@ -27,6 +27,7 @@ class AerocodeApp {
     private usuarioLogado: Funcionario | null = null;
 
     constructor() {
+        Armazenamento.inicializar();
         this.carregarTodosDados();
         this.inicializarGeradorIDs();
         this.inicializarDados();
@@ -51,6 +52,7 @@ class AerocodeApp {
     }
 
     private salvarTodosDados(): void {
+        Armazenamento.inicializar();
         Armazenamento.salvar('funcionarios.json', this.funcionarios);
         Armazenamento.salvar('pecas.json', this.pecas);
         Armazenamento.salvar('etapas.json', this.etapas);
@@ -74,6 +76,8 @@ class AerocodeApp {
     }
 
     public iniciar(): void {
+        Armazenamento.inicializar();
+        this.carregarTodosDados();
         console.log("SISTEMA AEROCODE");
         
         while (true) {
@@ -99,7 +103,7 @@ class AerocodeApp {
         }
     }
 
-        private menuPrincipal(): void {
+    private menuPrincipal(): void {
         console.log(`\nMENU PRINCIPAL (${this.usuarioLogado?.nivelPermissao})`);
         
         let opcaoNumero = 1;
@@ -228,8 +232,8 @@ class AerocodeApp {
             console.log("Nenhuma aeronave cadastrada.");
             return;
         }
-        this.aeronaves.forEach(a => {
-            console.log(`- ${a.codigo}: ${a.modelo} (${a.tipo}) - ${a.pecas.length} pecas, ${a.etapas.length} etapas`);
+        this.aeronaves.forEach((a, index) => {
+            console.log(`${index + 1}. ${a.codigo}: ${a.modelo} (${a.tipo}) - ${a.pecas.length} pecas, ${a.etapas.length} etapas`);
         });
     }
 
@@ -681,9 +685,7 @@ class AerocodeApp {
         }
     }
 
-    private gerarRelatorio(): void {
-        console.log("\nGERAR RELATORIO");
-        
+    private gerarRelatorio(): void {        
         if (this.aeronaves.length === 0) {
             console.log("Nenhuma aeronave.");
             return;
@@ -697,13 +699,71 @@ class AerocodeApp {
             const cliente = readlineSync.question("Cliente: ");
             const dataEntrega = readlineSync.question("Data entrega: ");
 
-            console.log("\nRELATORIO FINAL");
-            console.log("Cliente: " + cliente);
-            console.log("Data entrega: " + dataEntrega);
-            console.log(aeronave.exibirDetalhes(this.pecas, this.etapas, this.funcionarios));
+            const relat = this.gerarConteudoRelatorio(aeronave, cliente, dataEntrega);
+
+            const caminho = path.join(__dirname, 'relatorio', `${aeronave.codigo}.txt`);
+            try {
+                fs.writeFileSync(caminho, relat, 'utf8');
+                console.log(`Relatorio salvo em: ${caminho}`);
+            } catch (err) {
+                console.log("Erro ao salvar relatorio:", err);
+            }
         }
     }
-}
 
+    private gerarConteudoRelatorio(aeronave: Aeronave, cliente: string, dataEntrega: string): string {
+        const dataGeracao = new Date().toLocaleString('pt-BR');
+        
+        const relatorio = `RELATÓRIO FINAL DE PRODUÇÃO - AEROCODE
+=======================================
+
+INFORMAÇÕES DO CLIENTE
+----------------------
+Cliente: ${cliente}
+Data de entrega: ${dataEntrega}
+Data de geração: ${dataGeracao}
+
+DADOS DA AERONAVE
+-----------------
+Código: ${aeronave.codigo}
+Modelo: ${aeronave.modelo}
+Tipo: ${aeronave.tipo}
+Capacidade: ${aeronave.capacidade} passageiros
+Alcance: ${aeronave.alcance} km
+
+PEÇAS ASSOCIADAS
+----------------
+${aeronave.pecas.map(pecaId => {
+    const peca = this.pecas.find(p => p.id === pecaId);
+    return peca ? `- ${peca.nome} (${peca.tipo}) - ${peca.status}` : `- Peça ${pecaId} (não encontrada)`;
+}).join('\n') || 'Nenhuma peça associada'}
+
+ETAPAS DE PRODUÇÃO
+------------------
+${aeronave.etapas.map(etapaId => {
+    const etapa = this.etapas.find(e => e.id === etapaId);
+    if (!etapa) return `- Etapa ${etapaId} (não encontrada)`;
+    
+    const funcionariosEtapa = etapa.funcionarios.map(funcId => {
+        const func = this.funcionarios.find(f => f.id === funcId);
+        return func ? func.nome : `Funcionário ${funcId}`;
+    }).join(', ');
+
+    return `- ${etapa.nome} - ${etapa.status} [Responsáveis: ${funcionariosEtapa || 'Nenhum'}]`;
+}).join('\n') || 'Nenhuma etapa associada'}
+
+TESTES REALIZADOS
+-----------------
+${aeronave.testes.map((teste, index) => 
+    `${index + 1}. ${teste.tipo}: ${teste.resultado}`
+).join('\n') || 'Nenhum teste registrado'}
+
+=======================================
+Relatório gerado automaticamente pelo Sistema Aerocode
+`;
+
+        return relatorio;
+    }
+}
 const app = new AerocodeApp();
 app.iniciar();

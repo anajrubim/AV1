@@ -1,4 +1,4 @@
-import { NivelPermissao } from "../enums/NiveisPermissao";
+import { NivelPermissao } from '../enums/NivelPermissao';
 
 export class Funcionario {
     constructor(

@@ -1,8 +1,8 @@
-import { TipoAeronave } from "../enums/TiposAeronave";
-import { Peca } from "./Peca";
-import { Etapa } from "./Etapa";
-import { Teste } from "./Teste";
-import { Funcionario } from "./Funcionario";
+import { TipoAeronave } from '../enums/TipoAeronave';
+import { Teste } from './Teste';
+import { Peca } from './Peca';
+import { Etapa } from './Etapa';
+import { Funcionario } from './Funcionario';
 
 export class Aeronave {
     public pecas: string[] = [];

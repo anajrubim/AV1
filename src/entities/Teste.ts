@@ -1,5 +1,5 @@
-import { TipoTeste } from "../enums/TiposTeste";
-import { ResultadoTeste } from "../enums/ResultadosTeste";
+import { TipoTeste } from '../enums/TipoTeste';
+import { ResultadoTeste } from '../enums/ResultadoTeste';
 
 export class Teste {
     constructor(
